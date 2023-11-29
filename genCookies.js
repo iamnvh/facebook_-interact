@@ -47,23 +47,37 @@ async function genCookies(username, password, code, port, ip, ipName, ipPassword
   await delay(0.5,0,8)
   await page.keyboard.press('Enter');
 
-  await page.waitForSelector('input[name="submit[Continue]"]')
-  await page.click('input[name="submit[Continue]"]')
+  try {
+    await page.waitForSelector('input[name="submit[Continue]"]')
+    await page.click('input[name="submit[Continue]"]')
+
+    await page.waitForSelector('input[name="submit[This was me]"]')
+    await page.click('input[name="submit[This was me]"]')
+
+    await page.waitForSelector('input[name="submit[Continue]"]')
+    await page.click('input[name="submit[Continue]"]')
+  } catch (error) {
+    console.log("Không cần checkpoint")
+  }
 
   await delay(4,8)
   const cookies = await page.cookies();
-  const name_cookie = username+"|"+password+"|"+ip+"|"+port+"|"+ipName+"|"+ipPassword
-  fs.writeFile(`cookies/${name_cookie}.json`, JSON.stringify(cookies), 'utf8', (err) => {
+  fs.writeFile(`cookies/${username}.json`, JSON.stringify(cookies), 'utf8', (err) => {
     if (err) {
       console.error('There was an error writing the file:', err);
       return;
     }
     console.log('File has been written successfully.');
   });
-  await browser.close();
+  // await browser.close();
 }
 
 async function run() {
+  const folderPath = 'cookies';
+  const files = fs.readdirSync(folderPath)
+  const listUserCookiesAvailable = files.map((user) => {
+    return user.replace('.json', '')
+  })
   fs.readFile('acc.txt', async (err, data1) => {
     if (err) {
       console.error(err);
@@ -79,7 +93,7 @@ async function run() {
 
       let response = [];
       const proxies = data2.toString().split('\n');
-      for (let i = 0; i < accounts.length; i++) { // Khởi tạo giá trị cho i
+      for (let i = 0; i < accounts.length; i++) {
         const username = accounts[i].split('|')[0];
         const password = accounts[i].split('|')[1];
         const code = accounts[i].split('|')[2];
@@ -87,17 +101,21 @@ async function run() {
         const port = proxies[i].split(':')[1];
         const ipName = proxies[i].split(':')[2];
         const ipPassword = proxies[i].split(':')[3];
-        response.push({
-          username: username,
-          password: password,
-          code: code,
-          port: port,
-          ip: ip,
-          ipName: ipName,
-          ipPassword: ipPassword
-        });
+        if (!listUserCookiesAvailable.includes(username)) {
+          response.push({
+            username: username,
+            password: password,
+            code: code,
+            port: port,
+            ip: ip,
+            ipName: ipName,
+            ipPassword: ipPassword
+          });
+        }
       }
-
+      if (response?.length == 0) {
+        console.log("Các account đã được save cookie hoàn tất")
+      }
       // for (const item of response) {
       //   await genCookies(item['username'], item['password'], item['code'], item['port'], item['ip'], item['ipName'], item['ipPassword']);
       // }

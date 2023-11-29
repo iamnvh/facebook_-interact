@@ -46,7 +46,7 @@ async function interact(path, linkGroup) {
     width: 1200,
     height: 800
   });
-  const cookies = await getCookies(`cookies/${path}.json`)
+  const cookies = await getCookies(`cookies/${username}.json`)
   await page.setCookie(...cookies);
   await delay(3,4)
   await page.goto('https://whoer.net/')
@@ -185,23 +185,48 @@ async function interact(path, linkGroup) {
 }
 
 async function runAndProcess() {
-  const folderPath = 'cookies';
   const groups = ['766939367338274']
-  
-    const files = fs.readdirSync(folderPath)
-    while (true) {
-      try {
-        for (let groupId of groups) {
-          link = `${base_url}/groups/${groupId}/?ref=share_group_link`
-          for(let file of files) {
-            const path = file.replace('.json','')
-            await interact(path, link)
-          }
-        }
-      } catch (err) {
-        console.error('Lỗi khi đọc thư mục:', err);
-      }
+  fs.readFile('proxies.txt',async (err, dataProxies) => {
+    if (err) {
+      console.log(err);
+      return;
     }
+    const proxies = dataProxies.toString().split('\n');
+    fs.readFile('acc.txt', async (err, dataAccount) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+      const accounts = dataAccount.toString().split('\n');
+      for (let i = 0; i < accounts.length; i++) {
+        const username = accounts[i].split('|')[0];
+        const password = accounts[i].split('|')[1];
+        const code = accounts[i].split('|')[2];
+        const ip = proxies[i].split(':')[0];
+        const port = proxies[i].split(':')[1];
+        const ipName = proxies[i].split(':')[2];
+        const ipPassword = proxies[i].split(':')[3];
+        for (let groupId of groups) {
+          const link = `${base_url}/groups/${groupId}/?ref=share_group_link`
+          const path = username+"|"+password+"|"+ip+"|"+port+"|"+ipName+"|"+ipPassword
+          await interact(path, link)
+        }
+      }
+      while (true) {
+        try {
+          for (let groupId of groups) {
+            link = `${base_url}/groups/${groupId}/?ref=share_group_link`
+            for(let file of files) {
+              await interact(file, link, )
+            }
+          }
+        } catch (err) {
+          console.error('Lỗi khi đọc thư mục:', err);
+        }
+      }
+    })
+  })
+    
   
 }
 
